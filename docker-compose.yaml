@@ -1,0 +1,33 @@
+services:
+  workflow-engine:
+    image: hdsali/wf_engine:latest
+    container_name: WF_Engine
+    ports:
+      - "5005:5005"
+    environment:
+      - DOTNET_ENVIRONMENT=Production
+      - ConnectionStrings__WFDBConnectionString=Server=db,1433;Database=WorkFlow_V3;User Id=sa;Password=Password123;TrustServerCertificate=True;
+    restart: unless-stopped
+    depends_on:
+      - db 
+
+  db:
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    container_name: wf_sqlserver
+    ports:
+      - "1437:1433"
+    environment:
+      - SA_PASSWORD=Password123
+      - ACCEPT_EULA=Y
+    volumes:
+      - sql_data:/var/opt/mssql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P Password123 -Q 'SELECT 1' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    user: root
+
+volumes:
+  sql_data:
